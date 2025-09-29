@@ -1,28 +1,45 @@
 package com.example.parkapi.web.controller;
 
+import com.example.parkapi.dto.UsuarioCreateDto;
+import com.example.parkapi.dto.UsuarioResponseDto;
+import com.example.parkapi.dto.UsuarioSenhaDto;
+import com.example.parkapi.dto.mapper.UsuarioMapper;
 import com.example.parkapi.entity.Usuario;
 import com.example.parkapi.service.UsuarioService;
-import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
+import org.springframework.web.bind.annotation.*;
+import java.util.List;
 
-import java.net.URI;
-
-@RequiredArgsConstructor
 @RestController
-@RequestMapping("api/v1/usuarios")
+@RequestMapping("/api/v1/usuarios")
 public class UsuarioController {
 
     private final UsuarioService service;
+    public  UsuarioController(UsuarioService service){
+        this.service = service;
+    }
 
     @PostMapping
-    public ResponseEntity<Usuario> create(@RequestBody Usuario usuario){
-        Usuario user = service.salvar(usuario);
-        URI uri = ServletUriComponentsBuilder.fromCurrentRequestUri().build().toUri();
-        return ResponseEntity.created(uri).body(user);
+    public ResponseEntity<UsuarioResponseDto> create(@RequestBody UsuarioCreateDto createDto){
+        Usuario user = service.salvar(UsuarioMapper.toUsuario(createDto));
+        return ResponseEntity.status(HttpStatus.CREATED).body(UsuarioMapper.toDto(user));
+    }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<UsuarioResponseDto> getById(@PathVariable("id") Long id){
+        Usuario user = service.buscarPorId(id);
+        return ResponseEntity.ok(UsuarioMapper.toDto(user));
+    }
+
+    @PatchMapping("/{id}")
+    public ResponseEntity<Void> updatePassword(@PathVariable("id") Long id, @RequestBody UsuarioSenhaDto dto){
+        service.editarSenha(id, dto.getSenhaAtual(), dto.getNovaSenha(), dto.getConfirmaSenha());
+        return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping
+    public ResponseEntity<List<UsuarioResponseDto>> getAll(){
+        return ResponseEntity.ok(UsuarioMapper.toListDto(service.buscarTodos()));
     }
 }
